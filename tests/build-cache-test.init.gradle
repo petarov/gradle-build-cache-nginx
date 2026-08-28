@@ -1,0 +1,37 @@
+// Throwaway init script: point ANY build at the cache without touching its
+// settings.gradle.kts. Groovy on purpose -- init scripts in Kotlin need the
+// typed Settings API and are fussy about `settingsEvaluated`.
+//
+//   ./gradlew --build-cache -I tests/build-cache-test.init.gradle build
+//
+// Properties (all optional):
+//   -Dgbc.url=http://cache.internal.example/cache/
+//   -Dgbc.user=ci -Dgbc.password=secret
+//   -Dgbc.push=true        push as well as pull (simulates a CI agent)
+//   -Dgbc.local=false      DISABLE the local cache, so any hit must be remote
+//   -Dgbc.insecure=true    allow plain http (test servers only)
+
+import org.gradle.caching.http.HttpBuildCache
+
+settingsEvaluated { settings ->
+    settings.buildCache {
+        local {
+            enabled = Boolean.parseBoolean(System.getProperty('gbc.local', 'true'))
+        }
+        remote(HttpBuildCache) {
+            url = System.getProperty('gbc.url', 'http://localhost/cache/')
+            push = Boolean.parseBoolean(System.getProperty('gbc.push', 'false'))
+            allowInsecureProtocol = Boolean.parseBoolean(System.getProperty('gbc.insecure', 'false'))
+            allowUntrustedServer = false
+            if (System.getProperty('gbc.user')) {
+                credentials {
+                    username = System.getProperty('gbc.user')
+                    password = System.getProperty('gbc.password')
+                }
+            }
+        }
+    }
+    println "[gbc] remote=${System.getProperty('gbc.url', 'http://localhost/cache/')} " +
+            "push=${System.getProperty('gbc.push', 'false')} " +
+            "local=${System.getProperty('gbc.local', 'true')}"
+}

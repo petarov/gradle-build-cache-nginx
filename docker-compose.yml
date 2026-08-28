@@ -1,0 +1,47 @@
+services:
+  gbc:
+    build: .
+    image: gradle-build-cache-raw:1.0.0
+    container_name: gbc
+    restart: unless-stopped
+    environment:
+      # --- basic auth: two independent switches, both optional ---
+      # nginx authenticates HTTP METHODS, not callers, so these are named after
+      # the verbs they guard.
+      #
+      #   GBC_HTTP_GET_*   empty -> anyone may read the cache
+      #                    set   -> credentials required to read
+      #   GBC_HTTP_PUT_*   empty -> anyone may write to the cache
+      #                    set   -> credentials required to write
+      #
+      # PUT is a CI-only verb: developer builds run with isPush=false and never
+      # issue one. Setting GBC_HTTP_PUT_* is therefore what stops a laptop with
+      # isPush=true from writing to the shared cache -- and on an internal
+      # network it is usually the only pair worth setting.
+      GBC_HTTP_GET_USER:     "${GBC_HTTP_GET_USER:-}"
+      GBC_HTTP_GET_PASSWORD: "${GBC_HTTP_GET_PASSWORD:-}"
+      GBC_HTTP_PUT_USER:     "${GBC_HTTP_PUT_USER:-}"
+      GBC_HTTP_PUT_PASSWORD: "${GBC_HTTP_PUT_PASSWORD:-}"
+      # --- storage ---
+      GBC_MAX_ENTRY_SIZE:    "${GBC_MAX_ENTRY_SIZE:-512m}"
+    ports:
+      # Plain HTTP; see the notes at the top of nginx/site.conf
+      - "${GBC_BIND:-127.0.0.1}:${GBC_HTTP_PORT:-80}:80"
+    volumes:
+      # ONE mount for both the entry store and the PUT temp dir. nginx renames
+      # temp -> final, which is atomic only inside a single filesystem; mounting
+      # /data as a whole makes that structurally true. 40-gbc-preflight.sh still
+      # asserts st_dev equality in case someone mounts over /data/tmp.
+      - ${GBC_DATA_DIR:-/srv/gradle-build-cache}/store:/data
+      # Logs on the host, so host logrotate handles them.
+      - ${GBC_DATA_DIR:-/srv/gradle-build-cache}/logs:/var/log/nginx
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535
+    stop_grace_period: 30s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

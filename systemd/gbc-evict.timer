@@ -1,0 +1,14 @@
+# /etc/systemd/system/gbc-evict.timer
+# systemctl enable --now gbc-evict.timer
+[Unit]
+Description=Hourly Gradle build cache eviction
+
+[Timer]
+# Hourly, not daily: the size pass is the disk-full guard, and a CI fleet can add
+# tens of GiB in an afternoon. The age pass is cheap and idempotent.
+OnCalendar=hourly
+RandomizedDelaySec=5m
+Persistent=true
+
+[Install]
+WantedBy=timers.target
