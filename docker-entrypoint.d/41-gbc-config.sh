@@ -1,6 +1,7 @@
 #!/bin/sh
-# Render the one thing nginx cannot express itself: the optional basic-auth
-# includes. Everything else is a plain .conf file in the repo.
+# Writes /etc/nginx/gen/cache.conf -- the only part of the nginx config that
+# cannot be static, because nginx has no conditionals. Everything else is a
+# plain .conf baked into the image.
 # `docker compose exec gbc nginx -T` prints the effective result.
 set -eu
 
@@ -14,27 +15,18 @@ GBC_HTTP_PUT_PASSWORD="${GBC_HTTP_PUT_PASSWORD:-}"
 # preemptively and never reads a challenge.
 REALM=gradle-build-cache-raw
 
-INC=/etc/nginx/gbc-inc
-GETH=$INC/htpasswd.get
-PUTH=$INC/htpasswd.put
+GEN=/etc/nginx/gen
+OUT=$GEN/cache.conf
+GETH=$GEN/htpasswd.get
+PUTH=$GEN/htpasswd.put
 
 log() { echo "gbc-config: $*" >&2; }
 die() { echo "gbc-config: FATAL: $*" >&2; exit 1; }
 
-mkdir -p "$INC"
+mkdir -p "$GEN"
 
 # ---------------------------------------------------------------- basic auth ---
-# Two independent switches, named after the HTTP verbs they guard, because that
-# is what nginx can actually enforce -- it authenticates methods, not callers.
-#
-#   GBC_HTTP_GET_*   empty -> anyone may read the cache
-#                    set   -> credentials required to read
-#   GBC_HTTP_PUT_*   empty -> anyone may write to the cache
-#                    set   -> credentials required to write
-#
-# PUT is a CI-only verb. Developer builds set isPush=false and never issue one,
-# so in practice only the CI credential needs GBC_HTTP_PUT_*; setting it is what
-# stops a laptop with isPush=true from writing to the shared cache.
+# What the GBC_HTTP_* variables mean is documented in .env.example.
 #
 # htpasswd -m => apr1. Never -B (bcrypt): musl's crypt() has no bcrypt, so
 # nginx:alpine answers 401 for every bcrypt hash, with only a terse log line.
@@ -59,28 +51,31 @@ if [ -n "$GBC_HTTP_PUT_USER" ]; then
 fi
 chmod 0640 "$GETH" "$PUTH"; chown root:nginx "$GETH" "$PUTH"
 
-if [ "$GET_AUTH" = 1 ]; then
-    printf 'auth_basic           "%s";\nauth_basic_user_file %s;\n' "$REALM" "$GETH" > "$INC/auth-get.conf"
-else
-    echo 'auth_basic off;' > "$INC/auth-get.conf"
-fi
+# ------------------------------------------------------------------- render ---
+{
+    echo "# Generated at container start by 41-gbc-config.sh. Do not edit."
+    echo "client_max_body_size $GBC_MAX_ENTRY_SIZE;"
 
-# limit_except GET applies to every other method, i.e. PUT. GET implies HEAD.
-if [ "$PUT_AUTH" = 1 ]; then
-    printf '    limit_except GET {\n        auth_basic           "%s (write)";\n        auth_basic_user_file %s;\n    }\n' \
-        "$REALM" "$PUTH" > "$INC/auth-put.conf"
-else
-    printf '    limit_except GET {\n        auth_basic off;\n    }\n' > "$INC/auth-put.conf"
-fi
+    if [ "$GET_AUTH" = 1 ]; then
+        echo "auth_basic           \"$REALM\";"
+        echo "auth_basic_user_file $GETH;"
+    else
+        echo "auth_basic off;"
+    fi
 
-log "auth: GET=$([ "$GET_AUTH" = 1 ] && echo on || echo off) PUT=$([ "$PUT_AUTH" = 1 ] && echo on || echo off)"
+    # limit_except GET applies to every other method, i.e. PUT. GET implies HEAD.
+    echo "limit_except GET {"
+    if [ "$PUT_AUTH" = 1 ]; then
+        echo "    auth_basic           \"$REALM (write)\";"
+        echo "    auth_basic_user_file $PUTH;"
+    else
+        echo "    auth_basic off;"
+    fi
+    echo "}"
+} > "$OUT"
+
+log "auth: GET=$([ "$GET_AUTH" = 1 ] && echo on || echo off) PUT=$([ "$PUT_AUTH" = 1 ] && echo on || echo off) max_entry=$GBC_MAX_ENTRY_SIZE"
 if [ "$PUT_AUTH" = 0 ]; then
     log "WARNING: PUT is unauthenticated -- anything that can reach this port can"
     log "         write to the cache. Set GBC_HTTP_PUT_USER/PASSWORD."
 fi
-
-# -------------------------------------------------------------- config files ---
-# Explicit variable list: envsubst must not touch nginx's own $variables.
-envsubst '${GBC_MAX_ENTRY_SIZE}' < /etc/nginx/gbc-src/cache.conf > "$INC/cache.conf"
-
-log "rendered: max_entry=$GBC_MAX_ENTRY_SIZE"

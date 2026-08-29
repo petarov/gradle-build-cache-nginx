@@ -5,24 +5,11 @@ services:
     container_name: gbc
     restart: unless-stopped
     environment:
-      # --- basic auth: two independent switches, both optional ---
-      # nginx authenticates HTTP METHODS, not callers, so these are named after
-      # the verbs they guard.
-      #
-      #   GBC_HTTP_GET_*   empty -> anyone may read the cache
-      #                    set   -> credentials required to read
-      #   GBC_HTTP_PUT_*   empty -> anyone may write to the cache
-      #                    set   -> credentials required to write
-      #
-      # PUT is a CI-only verb: developer builds run with isPush=false and never
-      # issue one. Setting GBC_HTTP_PUT_* is therefore what stops a laptop with
-      # isPush=true from writing to the shared cache -- and on an internal
-      # network it is usually the only pair worth setting.
+      # All optional; documented in .env.example.
       GBC_HTTP_GET_USER:     "${GBC_HTTP_GET_USER:-}"
       GBC_HTTP_GET_PASSWORD: "${GBC_HTTP_GET_PASSWORD:-}"
       GBC_HTTP_PUT_USER:     "${GBC_HTTP_PUT_USER:-}"
       GBC_HTTP_PUT_PASSWORD: "${GBC_HTTP_PUT_PASSWORD:-}"
-      # --- storage ---
       GBC_MAX_ENTRY_SIZE:    "${GBC_MAX_ENTRY_SIZE:-512m}"
     ports:
       # Plain HTTP; see the notes at the top of nginx/site.conf
