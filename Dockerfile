@@ -6,8 +6,6 @@ RUN apk add --no-cache apache2-utils su-exec
 
 RUN rm -f /etc/nginx/conf.d/default.conf
 
-# nginx.conf, site.conf and cache.conf are all static; the entrypoint only
-# writes /etc/nginx/gen/cache.conf.
 COPY nginx/                /etc/nginx/
 COPY docker-entrypoint.d/  /docker-entrypoint.d/
 
