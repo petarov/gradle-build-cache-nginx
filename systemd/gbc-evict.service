@@ -5,6 +5,3 @@ Description=Evict old/excess Gradle build cache entries
 [Service]
 Type=oneshot
 ExecStart=/opt/gradle-build-cache-raw/systemd/gbc-evict.sh
-# The size pass can walk millions of inodes; keep it out of the way of builds.
-Nice=10
-IOSchedulingClass=idle

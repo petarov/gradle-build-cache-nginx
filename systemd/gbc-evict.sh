@@ -19,7 +19,7 @@ set -euo pipefail
 REPO_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 [[ -f $REPO_DIR/.env ]] && set -a && . "$REPO_DIR/.env" && set +a
 
-DATA_DIR=${GBC_DATA_DIR:-/srv/gradle-build-cache}
+DATA_DIR=${GBC_DATA_DIR:-/var/lib/gradle-build-cache-raw}
 MAX_AGE_DAYS=${GBC_MAX_AGE_DAYS:-14}
 MAX_SIZE_GB=${GBC_MAX_SIZE_GB:-200}
 BY=atime

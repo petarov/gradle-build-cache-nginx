@@ -4,10 +4,10 @@
 Description=Hourly Gradle build cache eviction
 
 [Timer]
-# Hourly, not daily: the size pass is the disk-full guard, and a CI fleet can add
-# tens of GiB in an afternoon. The age pass is cheap and idempotent.
+# Hourly, not daily: the size pass is the disk-full guard, and a CI fleet can
+# add tens of GiB in an afternoon.
 OnCalendar=hourly
-RandomizedDelaySec=5m
+RandomizedDelaySec=10m
 Persistent=true
 
 [Install]
