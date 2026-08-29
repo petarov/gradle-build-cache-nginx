@@ -1,7 +1,6 @@
 # /etc/systemd/system/gbc-evict.service
 [Unit]
 Description=Evict old/excess Gradle build cache entries
-After=gradle-build-cache.service
 
 [Service]
 Type=oneshot
