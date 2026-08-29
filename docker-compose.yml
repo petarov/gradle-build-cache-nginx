@@ -18,9 +18,9 @@ services:
       # ONE mount for both the entry store (cache/) and the PUT temp dir (tmp/).
       # nginx renames temp -> final, which is atomic only inside a single
       # filesystem; mounting /data as a whole makes that structurally true.
-      - ${GBC_DATA_DIR:-/srv/gradle-build-cache}/store:/data
+      - ${GBC_DATA_DIR:-/var/lib/gradle-build-cache-raw}/store:/data
       # Logs on the host, so host logrotate handles them.
-      - ${GBC_DATA_DIR:-/srv/gradle-build-cache}/logs:/var/log/nginx
+      - ${GBC_DATA_DIR:-/var/lib/gradle-build-cache-raw}/logs:/var/log/nginx
     ulimits:
       nofile:
         soft: 65535
