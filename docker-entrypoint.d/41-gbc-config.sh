@@ -13,7 +13,7 @@ GBC_HTTP_PUT_PASSWORD="${GBC_HTTP_PUT_PASSWORD:-}"
 
 # Only ever seen by a human curling the endpoint: Gradle sends Basic credentials
 # preemptively and never reads a challenge.
-REALM=gradle-build-cache-raw
+REALM=gradle-build-cache-nginx
 
 GEN=/etc/nginx/gen
 OUT=$GEN/cache.conf

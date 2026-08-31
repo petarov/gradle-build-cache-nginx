@@ -4,4 +4,4 @@ Description=Evict old/excess Gradle build cache entries
 
 [Service]
 Type=oneshot
-ExecStart=/opt/gradle-build-cache-raw/systemd/gbc-evict.sh
+ExecStart=/opt/gradle-build-cache-nginx/systemd/gbc-evict.sh

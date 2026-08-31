@@ -27,7 +27,7 @@ fi
 
 # Marker: systemd/gbc-evict.sh refuses to delete anything in a directory without it.
 [ -f "$CACHE/.gbc-cache-root" ] || {
-    printf 'gradle-build-cache-raw entry store. Files here are disposable.\n' \
+    printf 'gradle-build-cache-nginx entry store. Files here are disposable.\n' \
         > "$CACHE/.gbc-cache-root"
     chown nginx:nginx "$CACHE/.gbc-cache-root"
 }

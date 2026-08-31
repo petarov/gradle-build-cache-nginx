@@ -1,4 +1,4 @@
-# gradle-build-cache-raw
+# gradle-build-cache-nginx
 
 A Gradle remote [build cache](https://docs.gradle.org/current/userguide/build_cache.html): 
 nginx with `ngx_http_dav_module` in a container, storing entries as plain files. 
@@ -21,11 +21,11 @@ so the `rename()` is atomic.
 ## Install
 
 ```bash
-git clone <repo> /opt/gradle-build-cache-raw
-cd /opt/gradle-build-cache-raw
+git clone <repo> /opt/gradle-build-cache-nginx
+cd /opt/gradle-build-cache-nginx
 cp .env.example .env && chmod 600 .env   # then edit it
-mkdir -p /var/lib/gradle-build-cache-raw/store /var/lib/gradle-build-cache-raw/logs
-chown -R 101:101 /var/lib/gradle-build-cache-raw/store
+mkdir -p /var/lib/gradle-build-cache-nginx/store /var/lib/gradle-build-cache-nginx/logs
+chown -R 101:101 /var/lib/gradle-build-cache-nginx/store
 docker compose up -d --build
 ```
 
@@ -51,7 +51,7 @@ by `systemd/gbc-evict.sh`.
 
 | Variable | Default | Meaning |
 |---|---|---|
-| `GBC_DATA_DIR` | `/var/lib/gradle-build-cache-raw` | holds `store/` and `logs/` |
+| `GBC_DATA_DIR` | `/var/lib/gradle-build-cache-nginx` | holds `store/` and `logs/` |
 | `GBC_BIND` / `GBC_HTTP_PORT` | `127.0.0.1` / `80` | where the cache is published |
 | `GBC_MAX_ENTRY_SIZE` | `512m` | larger entries get 413 |
 | `GBC_HTTP_GET_USER` / `_PASSWORD` | empty | empty means anyone may read |
@@ -151,7 +151,7 @@ open file descriptor.
 ```bash
 docker compose exec gbc nginx -T          # effective config
 docker compose logs gbc                   # startup, preflight, auth state
-tail -f /var/lib/gradle-build-cache-raw/logs/access.log
+tail -f /var/lib/gradle-build-cache-nginx/logs/access.log
 ```
 
 The access log is the only forensic trail. When someone reports that caching
