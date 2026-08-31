@@ -4,9 +4,6 @@ A Gradle remote [build cache](https://docs.gradle.org/current/userguide/build_ca
 nginx with `ngx_http_dav_module` in a container, storing entries as plain files. 
 No database, no JVM, no license required.
 
-> [!NOTE]
-> This project is WIP.
-
 Gradle's HTTP build cache protocol is two verbs against `{url}{cacheKey}`:
 `GET` returns 200 with the entry or 404 for a miss, `PUT` stores it and returns
 any 2xx. **Any status outside 200/201/204/404 (and 401) makes Gradle log one 
@@ -57,8 +54,8 @@ by `systemd/gbc-evict.sh`.
 | `GBC_MAX_AGE_DAYS`| `14`  | eviction threshold |
 
 `PUT` is a CI-only verb, so the usual setup is to set the `PUT` pair only and
-leave reads open - a laptop then cannot write to the shared cache whatever its
-`isPush` flag says. `.env.example` documents each variable.
+leave reads open - a dev machine then cannot write to the shared cache whatever 
+its `isPush` flag says. `.env.example` documents each variable.
 
 ### TLS
 
@@ -114,7 +111,7 @@ The size pass is true LRU and depends on access times, so the filesystem must
 not be mounted `noatime`. Ubuntu's default `relatime` is fine. `--dry-run`
 reports what it would delete.
 
-## Java clients projects
+## Java client projects
 
 In the project's `settings.gradle.kts` (not `build.gradle.kts`, the cache is
 configured before projects are evaluated), with `org.gradle.caching=true`:
@@ -126,7 +123,7 @@ buildCache {
     local { isEnabled = true }
     remote<HttpBuildCache> {
         url = uri("https://cache.example/cache/")       // trailing slash required
-        isPush = System.getenv("CI") != null            // CI pushes, laptops pull
+        isPush = System.getenv("CI") != null            // CI pushes, devs pull
         credentials {
             username = System.getenv("GRADLE_CACHE_USER")
             password = System.getenv("GRADLE_CACHE_PASSWORD")
