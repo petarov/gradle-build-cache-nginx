@@ -33,18 +33,15 @@ docker compose up -d --build
 start if it cannot write the store, rather than letting the first `PUT` fail with
 status code `500`.
 
-Optional, on the host:
+View configuration and log files:
 
 ```bash
-cp systemd/*.service systemd/*.timer /etc/systemd/system/   # not the .sh
-cp systemd/gbc-logrotate.conf /etc/logrotate.d/gradle-build-cache
-systemctl daemon-reload
-systemctl enable --now gbc-evict.timer
+docker compose exec gbc nginx -T          # effective config
+docker compose logs gbc                   # startup, preflight, auth state
+tail -f /var/lib/gradle-build-cache-nginx/logs/access.log
 ```
 
-Edit the path to the logs in `gbc-logrotate.conf` to what your `GBC_DATA_DIR` points to.
-
-## Configuration
+### Configuration
 
 All in `.env`. The first five are read by `docker-compose.yml`, the last two only
 by `systemd/gbc-evict.sh`.
@@ -63,7 +60,7 @@ by `systemd/gbc-evict.sh`.
 leave reads open - a laptop then cannot write to the shared cache whatever its
 `isPush` flag says. `.env.example` documents each variable.
 
-## TLS
+### TLS
 
 There is none. Terminate it on a proxy in front. Example `location` for an nginx
 host proxy, with `GBC_HTTP_PORT=8017`:
@@ -95,7 +92,29 @@ location /gbc/ {
 }
 ```
 
-## Client
+## Eviction and Logs
+
+Optional, on the host:
+
+```bash
+cp systemd/*.service systemd/*.timer /etc/systemd/system/   # not the .sh
+cp systemd/gbc-logrotate.conf /etc/logrotate.d/gradle-build-cache
+systemctl daemon-reload
+systemctl enable --now gbc-evict.timer
+```
+
+Edit the path to the logs in `gbc-logrotate.conf` to what your `GBC_DATA_DIR` points to.
+
+`systemd/gbc-evict.sh` runs on the host, hourly via `gbc-evict.timer`. Two
+passes: delete entries not read for `GBC_MAX_AGE_DAYS`, then delete
+least-recently-read entries until the store is under `GBC_MAX_SIZE_GB`. It
+refuses to run in a directory without the `.gbc-cache-root` marker.
+
+The size pass is true LRU and depends on access times, so the filesystem must
+not be mounted `noatime`. Ubuntu's default `relatime` is fine. `--dry-run`
+reports what it would delete.
+
+## Java clients projects
 
 In the project's `settings.gradle.kts` (not `build.gradle.kts`, the cache is
 configured before projects are evaluated), with `org.gradle.caching=true`:
@@ -131,32 +150,6 @@ hit can only be remote:
 ```bash
 ./tests/testproject/run-cache-test.sh https://cache.example/cache/ ci:secret
 ```
-
-## Eviction
-
-`systemd/gbc-evict.sh` runs on the host, hourly via `gbc-evict.timer`. Two
-passes: delete entries not read for `GBC_MAX_AGE_DAYS`, then delete
-least-recently-read entries until the store is under `GBC_MAX_SIZE_GB`. It
-refuses to run in a directory without the `.gbc-cache-root` marker.
-
-The size pass is true LRU and depends on access times, so the filesystem must
-not be mounted `noatime`. Ubuntu's default `relatime` is fine. `--dry-run`
-reports what it would delete.
-
-Deleting an entry a build is currently reading is safe; the reader keeps its
-open file descriptor.
-
-## Operations
-
-```bash
-docker compose exec gbc nginx -T          # effective config
-docker compose logs gbc                   # startup, preflight, auth state
-tail -f /var/lib/gradle-build-cache-nginx/logs/access.log
-```
-
-The access log is the only forensic trail. When someone reports that caching
-stopped mid-build, look for a status other than 200/201/204/404 around that
-time — that is what disabled it.
 
 ## AI-Disclaimer
 
