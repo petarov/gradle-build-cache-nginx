@@ -1,6 +1,6 @@
 # gradle-build-cache-nginx
 
-A Gradle remote [build cache](https://docs.gradle.org/current/userguide/build_cache.html): 
+[Remote HTTP build cache](https://docs.gradle.org/current/userguide/build_cache.html#sec:build_cache_configure_remote) for Gradle: 
 nginx with `ngx_http_dav_module` in a container, storing entries as plain files. 
 No database, no JVM, no license required.
 
@@ -11,9 +11,9 @@ warning and disable the remote cache for the rest of that build.** Because
 of this this setup has no rate limiting (503), no custom error pages (500), 
 malformed keys are answered with 404 rather than 403.
 
-Entries live at `<data-dir>/store/cache/<first 2 hex>/<32 hex key>`, sharded 256
-ways. Uploads in progress live in `<data-dir>/store/tmp`, renamed when done,
-so the `rename()` is atomic.
+Cache files are sharded and live at `<data-dir>/store/cache/<first 2 hex>/<32 hex key>`.
+Uploads in progress live in `<data-dir>/store/tmp`, renamed when done, so the 
+`rename()` is atomic.
 
 ## Install
 
@@ -33,8 +33,8 @@ status code `500`.
 View configuration and log files:
 
 ```bash
-docker compose exec gbc nginx -T          # effective config
-docker compose logs gbc                   # startup, preflight, auth state
+docker compose exec gbc nginx -T
+docker compose logs gbc
 tail -f /var/lib/gradle-build-cache-nginx/logs/access.log
 ```
 
@@ -50,7 +50,7 @@ by `systemd/gbc-evict.sh`.
 | `GBC_MAX_ENTRY_SIZE` | `512m` | larger entries get 413 |
 | `GBC_HTTP_GET_USER` / `_PASSWORD` | empty | empty means anyone may read |
 | `GBC_HTTP_PUT_USER` / `_PASSWORD` | empty | empty means anyone may write |
-| `GBC_MAX_SIZE_GB` | `200` | eviction threshold |
+| `GBC_MAX_SIZE_GB` | `100` | eviction threshold |
 | `GBC_MAX_AGE_DAYS`| `14`  | eviction threshold |
 
 `PUT` is a CI-only verb, so the usual setup is to set the `PUT` pair only and
@@ -94,7 +94,7 @@ location /gbc/ {
 Optional, on the host:
 
 ```bash
-cp systemd/*.service systemd/*.timer /etc/systemd/system/   # not the .sh
+cp systemd/*.service systemd/*.timer /etc/systemd/system/
 cp systemd/gbc-logrotate.conf /etc/logrotate.d/gradle-build-cache
 systemctl daemon-reload
 systemctl enable --now gbc-evict.timer
@@ -113,8 +113,8 @@ reports what it would delete.
 
 ## Java client projects
 
-In the project's `settings.gradle.kts` (not `build.gradle.kts`, the cache is
-configured before projects are evaluated), with `org.gradle.caching=true`:
+Configure the build cache in your `settings.gradle.kts` (not `build.gradle.kts`).
+The setting `org.gradle.caching=true` must be enabled in your `gradle.properties` file.
 
 ```kotlin
 import org.gradle.caching.http.HttpBuildCache
@@ -130,22 +130,6 @@ buildCache {
         }
     }
 }
-```
-
-## Testing
-
-Protocol conformance — round trip, re-store, malformed keys, torn upload,
-concurrent writes to one key, the auth matrix:
-
-```bash
-./tests/gbc-smoke-test.sh https://cache.example/cache/ ci:secret [dev:secret]
-```
-
-End to end with real Gradle — two clones with the local cache disabled, so a
-hit can only be remote:
-
-```bash
-./tests/testproject/run-cache-test.sh https://cache.example/cache/ ci:secret
 ```
 
 ## AI-Disclaimer

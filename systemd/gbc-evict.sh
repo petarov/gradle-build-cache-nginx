@@ -21,7 +21,7 @@ REPO_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 
 DATA_DIR=${GBC_DATA_DIR:-/var/lib/gradle-build-cache-nginx}
 MAX_AGE_DAYS=${GBC_MAX_AGE_DAYS:-14}
-MAX_SIZE_GB=${GBC_MAX_SIZE_GB:-200}
+MAX_SIZE_GB=${GBC_MAX_SIZE_GB:-100}
 BY=atime
 DRY=0
 LOG=${GBC_EVICT_LOG:-$DATA_DIR/logs/evict.log}

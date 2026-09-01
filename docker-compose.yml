@@ -12,14 +12,13 @@ services:
       GBC_HTTP_PUT_PASSWORD: "${GBC_HTTP_PUT_PASSWORD:-}"
       GBC_MAX_ENTRY_SIZE:    "${GBC_MAX_ENTRY_SIZE:-512m}"
     ports:
-      # Plain HTTP; see the notes at the top of nginx/site.conf
       - "${GBC_BIND:-127.0.0.1}:${GBC_HTTP_PORT:-80}:80"
     volumes:
-      # ONE mount for both the entry store (cache/) and the PUT temp dir (tmp/).
-      # nginx renames temp -> final, which is atomic only inside a single
-      # filesystem; mounting /data as a whole makes that structurally true.
+      # One mount for both the entry store (cache/) and the PUT temp dir (tmp/).
+      # Note that nginx renames temp -> final, which is atomic only inside a
+      # single filesystem.
       - ${GBC_DATA_DIR:-/var/lib/gradle-build-cache-nginx}/store:/data
-      # Logs on the host, so host logrotate handles them.
+      # Logs on the host should be handled by logrotate; see systemd/gbc-logrotate.conf
       - ${GBC_DATA_DIR:-/var/lib/gradle-build-cache-nginx}/logs:/var/log/nginx
     ulimits:
       nofile:
