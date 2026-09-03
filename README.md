@@ -36,9 +36,9 @@ tail -f /var/lib/gradle-build-cache-nginx/logs/access.log
 
 ## Configuration
 
-The first five vars are read by `docker-compose.yml`, the last two only by `systemd/gbc-evict.sh`.
+The last two are read only by `systemd/gbc-evict.sh` and the rest by `docker-compose.yml`.
 
-| Variable | Default | Meaning |
+| Variable | Default | Description |
 |---|---|---|
 | `GBC_DATA_DIR` | `/var/lib/gradle-build-cache-nginx` | holds `store/` and `logs/` |
 | `GBC_BIND` / `GBC_HTTP_PORT` | `127.0.0.1` / `80` | where the cache is published |
