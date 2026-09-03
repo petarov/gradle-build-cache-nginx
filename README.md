@@ -20,15 +20,11 @@ Uploads in progress live in `<data-dir>/store/tmp`, renamed when done, so the
 ```bash
 git clone <repo> /opt/gradle-build-cache-nginx
 cd /opt/gradle-build-cache-nginx
-cp .env.example .env && chmod 600 .env   # then edit it
+cp .env.example .env && chmod 600 .env   # see configuration below
 mkdir -p /var/lib/gradle-build-cache-nginx/store /var/lib/gradle-build-cache-nginx/logs
 chown -R 101:101 /var/lib/gradle-build-cache-nginx/store
 docker compose up -d --build
 ```
-
-`101` is the nginx uid inside the container. The preflight script refuses to
-start if it cannot write the store, rather than letting the first `PUT` fail with
-status code `500`.
 
 View configuration and log files:
 
@@ -40,22 +36,23 @@ tail -f /var/lib/gradle-build-cache-nginx/logs/access.log
 
 ### Configuration
 
-All in `.env`. The first five are read by `docker-compose.yml`, the last two only
-by `systemd/gbc-evict.sh`.
+The first five vars are read by `docker-compose.yml`, the last two only by `systemd/gbc-evict.sh`.
 
 | Variable | Default | Meaning |
 |---|---|---|
 | `GBC_DATA_DIR` | `/var/lib/gradle-build-cache-nginx` | holds `store/` and `logs/` |
 | `GBC_BIND` / `GBC_HTTP_PORT` | `127.0.0.1` / `80` | where the cache is published |
 | `GBC_MAX_ENTRY_SIZE` | `512m` | larger entries get 413 |
-| `GBC_HTTP_GET_USER` / `_PASSWORD` | empty | empty means anyone may read |
-| `GBC_HTTP_PUT_USER` / `_PASSWORD` | empty | empty means anyone may write |
-| `GBC_MAX_SIZE_GB` | `100` | eviction threshold |
-| `GBC_MAX_AGE_DAYS`| `14`  | eviction threshold |
+| `GBC_HTTP_GET_USER` | empty | empty means anyone may read |
+| `GBC_HTTP_GET_PASSWORD` | empty | - |
+| `GBC_HTTP_PUT_USER` | empty | empty means anyone may write |
+| `GBC_HTTP_PUT`_PASSWORD` | empty | - |
+| `GBC_MAX_SIZE_GB` | `100` | eviction threshold (see eviction and Logs below) |
+| `GBC_MAX_AGE_DAYS`| `14`  | eviction threshold (see eviction and Logs below) |
 
 `PUT` is a CI-only verb, so the usual setup is to set the `PUT` pair only and
-leave reads open - a dev machine then cannot write to the shared cache whatever 
-its `isPush` flag says. `.env.example` documents each variable.
+leave reads open, so a dev machine then cannot write to the shared cache whatever 
+its `isPush` flag says.
 
 ### TLS
 
@@ -91,7 +88,7 @@ location /gbc/ {
 
 ## Eviction and Logs
 
-Optional, on the host:
+Optional on the host:
 
 ```bash
 cp systemd/*.service systemd/*.timer /etc/systemd/system/
@@ -111,7 +108,7 @@ The size pass is true LRU and depends on access times, so the filesystem must
 not be mounted `noatime`. Ubuntu's default `relatime` is fine. `--dry-run`
 reports what it would delete.
 
-## Java client projects
+## Java Client
 
 Configure the build cache in your `settings.gradle.kts` (not `build.gradle.kts`).
 The setting `org.gradle.caching=true` must be enabled in your `gradle.properties` file.
