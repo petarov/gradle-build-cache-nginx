@@ -34,7 +34,7 @@ docker compose logs gbc
 tail -f /var/lib/gradle-build-cache-nginx/logs/access.log
 ```
 
-### Configuration
+## Configuration
 
 The first five vars are read by `docker-compose.yml`, the last two only by `systemd/gbc-evict.sh`.
 
@@ -46,7 +46,7 @@ The first five vars are read by `docker-compose.yml`, the last two only by `syst
 | `GBC_HTTP_GET_USER` | empty | empty means anyone may read |
 | `GBC_HTTP_GET_PASSWORD` | empty | - |
 | `GBC_HTTP_PUT_USER` | empty | empty means anyone may write |
-| `GBC_HTTP_PUT`_PASSWORD` | empty | - |
+| `GBC_HTTP_PUT_PASSWORD` | empty | - |
 | `GBC_MAX_SIZE_GB` | `100` | eviction threshold (see eviction and Logs below) |
 | `GBC_MAX_AGE_DAYS`| `14`  | eviction threshold (see eviction and Logs below) |
 
@@ -54,7 +54,7 @@ The first five vars are read by `docker-compose.yml`, the last two only by `syst
 leave reads open, so a dev machine then cannot write to the shared cache whatever 
 its `isPush` flag says.
 
-### TLS
+## TLS
 
 There is none. Terminate it on a proxy in front. Example `location` for an nginx
 host proxy, with `GBC_HTTP_PORT=8017`:
