@@ -133,8 +133,7 @@ buildCache {
 
 > [!IMPORTANT]
 > AI-assisted code with manual edits. I have reviewed the output the agent 
-> produced, but if you have your concerns about AI, you should abstain from 
-> using this project.
+> produced, but if you have concerns about AI-generated code, avoid this project.
 
 ## License
 
